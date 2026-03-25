@@ -5,6 +5,7 @@ export default defineConfig({
 	integrations: [
 		starlight({
 			title: 'Minha Plataforma de Docs',
+			base: '/poc-docs-plataforma',
 			sidebar: [
 				{
 					label: 'Documentação',
