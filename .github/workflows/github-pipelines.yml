@@ -1,63 +1,74 @@
-name: Plataforma de Documentação Automática
+name: Plataforma de Docs Automática
 
 on:
   push:
     branches: [ main ]
+    # A pipeline só dispara se houver alterações nestas pastas
     paths:
-      - 'docs/**' # Só corre se alterares ficheiros na pasta docs
+      - 'docs/**'
+      - 'starlight-app/**'
+      - '.github/workflows/**'
 
+# Permissões necessárias para o GitHub Pages
 permissions:
   contents: read
   pages: write
   id-token: write
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
-
     steps:
-      - name: 1. Checkout do Repositório
+      - name: 1. Checkout do código
         uses: actions/checkout@v4
 
-      - name: 2. Configurar Node.js (Versão 20)
+      - name: 2. Configurar Node.js (v20)
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
-          cache-dependency-path: './starlight-app/package.json' # Ajusta se a tua pasta tiver outro nome
 
-      - name: 3. Instalar Dependências
+      - name: 3. Diagnóstico e Instalação
         run: |
+          echo "Listando ficheiros para confirmar estrutura:"
+          ls -R
+          
+          echo "Instalando dependências no motor..."
+          # Se a tua pasta tiver outro nome, muda 'starlight-app' aqui em baixo:
           cd starlight-app
           npm install
 
-      - name: 4. Injetar Documentação do Dev
+      - name: 4. Injetar Documentação
         run: |
-          # Limpa os docs que vêm por defeito no Astro
+          echo "💉 Limpando docs antigos e injetando novos..."
+          # Garante que a pasta de destino existe
+          mkdir -p starlight-app/src/content/docs
+          
+          # Limpa o que lá estiver (docs de exemplo do Astro)
           rm -rf starlight-app/src/content/docs/*
           
-          # Copia os teus MDs da raiz para dentro do motor
+          # Copia os teus MDs da pasta /docs na raiz para dentro do src/content/docs do motor
           cp -R docs/* starlight-app/src/content/docs/
           
-          echo "Docs injetados com sucesso!"
+          echo "Injeção concluída!"
 
-      - name: 5. Build do Site (Markdown -> HTML)
+      - name: 5. Build do Astro (Markdown -> HTML)
         run: |
           cd starlight-app
           npm run build
 
-      - name: 6. Preparar Artefacto para Deploy
+      - name: 6. Carregar Artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: starlight-app/dist # A pasta mágica que o Astro cria
+          # Onde o Astro coloca os ficheiros finais
+          path: starlight-app/dist
 
   deploy:
-    needs: build-and-deploy
+    needs: build
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: 7. Publicar Site Online
+      - name: 7. Publicar no GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
