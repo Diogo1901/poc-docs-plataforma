@@ -6,21 +6,7 @@ import starlight from '@astrojs/starlight';
 export default defineConfig({
 	integrations: [
 		starlight({
-			title: {
-        	en: 'My Docs',
-        	'pt-PT': 'Minha Documentação',
-      		},
-			defaultLocale: 'en',
-			 locales: {
-        // English docs in `src/content/docs/en/`
-        en: {
-          label: 'English',
-        },
-        // Portuguese docs in `src/content/docs/pt-pt/`
-        'pt-pt': {
-          label: 'Português',
-          lang: 'pt-PT',
-        },},
+			title: 'My Docs',
 			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/withastro/starlight' }],
 			sidebar: [
 				{
@@ -35,9 +21,6 @@ export default defineConfig({
 					autogenerate: { directory: 'reference' },
 				},
 			],
-			components: {
-    			Footer: './src/components/Chatbot.astro',
-  			},
 		}),
 	],
 });
