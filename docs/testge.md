@@ -5,7 +5,7 @@ description: Referência completa para integração com a API REST da DevScope
 
 
 
-## Geral
+## Visão Geral
 
 A API segue os princípios REST e utiliza JSON para todos os payloads. Todas as comunicações são feitas sobre HTTPS e requerem autenticação via Bearer Token.
 
