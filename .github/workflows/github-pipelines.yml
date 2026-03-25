@@ -1,0 +1,63 @@
+name: Plataforma de Documentação Automática
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'docs/**' # Só corre se alterares ficheiros na pasta docs
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 1. Checkout do Repositório
+        uses: actions/checkout@v4
+
+      - name: 2. Configurar Node.js (Versão 20)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: './starlight-app/package.json' # Ajusta se a tua pasta tiver outro nome
+
+      - name: 3. Instalar Dependências
+        run: |
+          cd starlight-app
+          npm install
+
+      - name: 4. Injetar Documentação do Dev
+        run: |
+          # Limpa os docs que vêm por defeito no Astro
+          rm -rf starlight-app/src/content/docs/*
+          
+          # Copia os teus MDs da raiz para dentro do motor
+          cp -R docs/* starlight-app/src/content/docs/
+          
+          echo "Docs injetados com sucesso!"
+
+      - name: 5. Build do Site (Markdown -> HTML)
+        run: |
+          cd starlight-app
+          npm run build
+
+      - name: 6. Preparar Artefacto para Deploy
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: starlight-app/dist # A pasta mágica que o Astro cria
+
+  deploy:
+    needs: build-and-deploy
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: 7. Publicar Site Online
+        id: deployment
+        uses: actions/deploy-pages@v4
