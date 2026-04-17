@@ -1,74 +1,59 @@
-name: Plataforma de Docs Automática
+name: DevScope SmartKnowledge Sync & Deploy
 
 on:
   push:
     branches: [ main ]
-    # A pipeline só dispara se houver alterações nestas pastas
+    # Só dispara se mexerem nos docs ou na configuração
     paths:
       - 'docs/**'
-      - 'starlight-app/**'
-      - '.github/workflows/**'
+      - 'devscope.json'
+      - 'devscope-sync.js'
 
-# Permissões necessárias para o GitHub Pages
+# Permissões estritas para publicar no GitHub Pages
 permissions:
   contents: read
   pages: write
   id-token: write
 
 jobs:
-  build:
+  build-and-sync:
     runs-on: ubuntu-latest
     steps:
       - name: 1. Checkout do código
         uses: actions/checkout@v4
 
-      - name: 2. Configurar Node.js (v20)
+      - name: 2. Configurar Node.js (v18)
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: '18'
 
-      - name: 3. Diagnóstico e Instalação
+      - name: 3. Sincronizar com a API DevScope
+        # Este script lê os .md, envia para a tua API C# e guarda o "site-compilado.zip"
+        run: node devscope-sync.js
+        env:
+          DEVSCOPE_API_URL: ${{ secrets.DEVSCOPE_API_URL }}
+          DEVSCOPE_PIPELINE_KEY: ${{ secrets.DEVSCOPE_PIPELINE_KEY }}
+          # Nota: Se o TENANT_ID já estiver no devscope.json, podes tirar esta linha
+          DEVSCOPE_TENANT_ID: ${{ secrets.DEVSCOPE_TENANT_ID }}
+
+      - name: 4. Extrair o Site Compilado (ZIP)
+        # Descompacta o ZIP que a tua API devolveu para uma pasta chamada "dist"
         run: |
-          echo "Listando ficheiros para confirmar estrutura:"
-          ls -R
-          
-          echo "Instalando dependências no motor..."
-          # Se a tua pasta tiver outro nome, muda 'starlight-app' aqui em baixo:
-          cd starlight-app
-          npm install
+          mkdir dist
+          unzip site-compilado.zip -d dist/
 
-      - name: 4. Injetar Documentação
-        run: |
-          echo "💉 Limpando docs antigos e injetando novos..."
-          # Garante que a pasta de destino existe
-          mkdir -p starlight-app/src/content/docs
-          
-          # Limpa o que lá estiver (docs de exemplo do Astro)
-          rm -rf starlight-app/src/content/docs/*
-          
-          # Copia os teus MDs da pasta /docs na raiz para dentro do src/content/docs do motor
-          cp -R docs/* starlight-app/src/content/docs/
-          
-          echo "Injeção concluída!"
-
-      - name: 5. Build do Astro (Markdown -> HTML)
-        run: |
-          cd starlight-app
-          npm run build
-
-      - name: 6. Carregar Artifact
+      - name: 5. Preparar Upload para o GitHub Pages
         uses: actions/upload-pages-artifact@v3
         with:
-          # Onde o Astro coloca os ficheiros finais
-          path: starlight-app/dist
+          path: dist/
 
   deploy:
-    needs: build
+    needs: build-and-sync
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: 7. Publicar no GitHub Pages
+      - name: 6. Publicar Site Estático
         id: deployment
         uses: actions/deploy-pages@v4
