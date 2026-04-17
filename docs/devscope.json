@@ -1,0 +1,20 @@
+{
+  "tenantId": "afd466d1-58af-4b5b-92cb-965dbc709208",
+  "docsPath": "docs/**/*.md",
+  "branch": "main",
+  "locales": {
+    "default": "en",
+    "targets": [
+      "en",
+      "pt-pt",
+      "nl",
+      "fr",
+      "de",
+      "it",
+      "es"
+    ]
+  },
+  "features": {
+    "enableChatbot": true
+  }
+}
